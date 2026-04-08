@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Derek Parfit — A Visual Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1714; --fg: #e8e0d4; --dim: #8a7e6e;
+  --accent: #b8a88a; --warm: #c0785a;
+  --ghost: rgba(184,168,138,0.08);
+  --serif: 'Libre Baskerville', Georgia, serif;
+  --sans: 'DM Sans', 'Helvetica Neue', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.fade-in { animation: fadeIn 0.4s ease both; }
+.fade-out { opacity:0; transition: opacity 0.3s ease; }
+.nav-dot { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--dim); background:transparent; cursor:pointer; transition:all 0.3s; padding:0; }
+.nav-dot.active { background:var(--warm); border-color:var(--warm); width:24px; border-radius:4px; }
+.nav-dot:hover { border-color:var(--accent); }
+.section-label { font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--warm); margin-bottom:0.5rem; }
+input[type=range] { -webkit-appearance:none; appearance:none; height:6px; border-radius:3px; background:var(--ghost); outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%; background:var(--warm); cursor:pointer; border:2px solid var(--bg); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+
+const EXPERIMENTS = [
+  { id:"intro", title:"Derek Parfit", subtitle:"A Visual Guide to His Ideas", category:null },
+  { id:"teleporter", title:"The Teleporter", subtitle:"Reasons and Persons, §78–84", category:"Personal Identity",
+    question:"If a machine destroys your body and creates an exact replica on Mars — atom by atom — did you survive?",
+    setup:"You step into a Teleporter on Earth. It scans every atom in your body, destroys the original, and transmits a blueprint to Mars, where an identical body is assembled. The person on Mars has all your memories, personality, and believes they are you.",
+    insight:"Parfit argues that what matters in survival is not some deep metaphysical \"identity\" but psychological continuity — the chain of memories, intentions, and character that connects you across time. The replica on Mars has all of that. So what, exactly, did you lose?",
+    provocation:"You already survive the \"destruction\" of your cells every ~7 years. Is the Teleporter really so different?",
+    interactive:"teleporter" },
+  { id:"branch", title:"The Branch Line Case", subtitle:"Reasons and Persons, §85–86", category:"Personal Identity",
+    question:"What if the Teleporter malfunctions and the original you isn't destroyed?",
+    setup:"Same Teleporter — but this time, the scanner doesn't destroy you. Now there are two of you: the original on Earth (who will die of cardiac failure from the scan in a few days) and the perfect replica on Mars. You can talk to each other by phone.",
+    insight:"This is where it gets uncomfortable. If the replica is \"you\" when the original is destroyed, why isn't the replica \"you\" when the original briefly survives? Parfit uses this to show that identity is not what matters. What matters is the continuation of your psychological life — and that can branch.",
+    provocation:"Both versions of you share your past. Both feel like \"you\" from the inside. Which one is the real you? Parfit says: that's the wrong question entirely.",
+    interactive:"branch" },
+  { id:"spectrum", title:"The Combined Spectrum", subtitle:"Reasons and Persons, §87–89", category:"Personal Identity",
+    question:"If we gradually replaced every cell and memory in your body with Napoleon's, at what point did you stop being you?",
+    setup:"Imagine a spectrum of cases. At one end, you are unchanged. At the other end, you have Napoleon's body, brain, memories, and personality. In between are thousands of tiny intermediate cases — each one barely different from the last.",
+    insight:"There is no sharp boundary. Each step is so small you can't point to the moment identity \"switches.\" Parfit concludes personal identity is indeterminate — it's not an all-or-nothing thing. It comes in degrees, like the transition from day to night.",
+    provocation:"If there's no fact of the matter about whether you survived, then personal identity can't be what matters most about survival.",
+    interactive:"spectrum" },
+  { id:"repugnant", title:"The Repugnant Conclusion", subtitle:"Reasons and Persons, §143", category:"Population Ethics",
+    question:"Is a world of 10 billion ecstatic people better or worse than a world of 100 trillion people whose lives are barely worth living?",
+    setup:"Population A has a small number of people, all with extremely high quality of life. Population Z has an astronomically larger number of people, each with a life just barely worth living — just above the threshold of \"a life not worth living.\" The sheer number of people in Z means its total wellbeing is higher.",
+    insight:"Most ethical theories that add up wellbeing are forced to conclude that Z is better than A. Parfit found this deeply troubling — hence \"repugnant.\" It reveals a fundamental tension in how we think about what makes the world go well. No simple theory avoids all the traps.",
+    provocation:"If you reject the Repugnant Conclusion, you may be committed to the \"elitist\" view that a few very happy lives matter more than billions of okay lives. Neither option is comfortable.",
+    interactive:"repugnant" },
+  { id:"nonidentity", title:"The Non-Identity Problem", subtitle:"Reasons and Persons, §122–131", category:"Ethics of Future People",
+    question:"Can a policy harm future people if those people would not exist without that policy?",
+    setup:"A 14-year-old decides to have a child now rather than waiting. The child has a harder start in life. But if she had waited, she would have had a different child. The child who exists can't say \"I wish you'd waited\" — because then they wouldn't exist at all.",
+    insight:"This generalizes to enormous policy questions: climate change, nuclear waste, resource depletion. The people affected by our bad choices are different people than would exist if we chose well. So in what sense have we \"harmed\" them? Parfit shows that person-affecting ethics — the idea that an act is wrong only if it's bad for someone — collapses here.",
+    provocation:"If we can't say we've harmed anyone in particular, does that mean reckless environmental destruction is... morally fine? Parfit says no — but explaining why requires rebuilding ethical theory from scratch.",
+    interactive:"nonidentity" },
+  { id:"mountain", title:"Climbing the Mountain", subtitle:"On What Matters, Vol. I–III", category:"Moral Convergence",
+    question:"What if Kant, the utilitarians, and the contractualists were all climbing the same mountain from different sides?",
+    interactive:"mountain" },
+  { id:"conclusion", title:"What It All Means", subtitle:"Tying the threads together", category:"Conclusion" },
+];
+
+function TeleporterViz() {
+  const [phase, setPhase] = useState(0);
+  const [showQ, setShowQ] = useState(false);
+  const run = () => { setPhase(1); setShowQ(false); setTimeout(()=>setPhase(2),1800); setTimeout(()=>{setPhase(3);setShowQ(true);},3200); };
+  return (
+    <div style={{textAlign:"center",padding:"2rem 0"}}>
+      <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"3rem",flexWrap:"wrap",minHeight:180}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--dim)",marginBottom:8}}>Earth</div>
+          <div style={{width:90,height:90,borderRadius:"50%",background:phase>=2?"var(--ghost)":"var(--accent)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,transition:"all 1s ease",opacity:phase>=2?0.25:1,border:phase===1?"3px solid var(--warm)":"3px solid transparent",boxShadow:phase===1?"0 0 30px var(--warm)":"none",margin:"0 auto"}}>🧍</div>
+          <div style={{fontSize:"0.75rem",color:"var(--dim)",marginTop:6,fontStyle:"italic"}}>{phase===0&&"You, intact"}{phase===1&&"Scanning..."}{phase>=2&&"Destroyed"}</div>
+        </div>
+        <div style={{fontSize:28,color:phase>=1?"var(--warm)":"var(--ghost)",transition:"color 0.6s",letterSpacing:4}}>{phase>=1?"⚡→⚡":"· · ·"}</div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--dim)",marginBottom:8}}>Mars</div>
+          <div style={{width:90,height:90,borderRadius:"50%",background:phase>=2?"var(--accent)":"var(--ghost)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,transition:"all 1s ease",opacity:phase>=2?1:0.25,border:phase>=2?"3px solid var(--warm)":"3px solid transparent",boxShadow:phase>=2?"0 0 20px rgba(200,120,50,0.3)":"none",margin:"0 auto"}}>🧍</div>
+          <div style={{fontSize:"0.75rem",color:"var(--dim)",marginTop:6,fontStyle:"italic"}}>{phase<2&&"Nothing yet"}{phase>=2&&"Exact replica"}</div>
+        </div>
+      </div>
+      {showQ&&<div style={{marginTop:"1.5rem",padding:"1rem 1.5rem",background:"var(--ghost)",borderRadius:8,fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"1.05rem",lineHeight:1.6,color:"var(--fg)",maxWidth:460,margin:"1.5rem auto 0",animation:"fadeUp 0.8s ease both"}}>The replica has your memories, your loves, your fears, your half-finished novel. <br/><strong style={{fontStyle:"normal"}}>Is it you?</strong></div>}
+      <button onClick={run} style={{marginTop:"1.5rem",padding:"0.6rem 1.8rem",background:"none",border:"2px solid var(--accent)",color:"var(--fg)",cursor:"pointer",borderRadius:4,fontFamily:"var(--serif)",fontSize:"0.9rem",letterSpacing:"0.05em"}}>{phase===0?"Step Into the Teleporter":"Reset"}</button>
+    </div>
+  );
+}
+
+function BranchViz() {
+  const [active, setActive] = useState(false);
+  return (
+    <div style={{textAlign:"center",padding:"2rem 0"}}>
+      <div style={{position:"relative",minHeight:220}}>
+        <div style={{position:"absolute",left:"50%",top:0,transform:"translateX(-50%)",transition:"all 1s ease",...(active?{left:"22%",top:10}:{})}}>
+          <div style={{width:80,height:80,borderRadius:"50%",background:active?"var(--warm)":"var(--accent)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,transition:"all 1s",opacity:active?0.6:1,margin:"0 auto"}}>🧍</div>
+          <div style={{fontSize:"0.7rem",color:"var(--dim)",marginTop:6,letterSpacing:"0.1em",textTransform:"uppercase"}}>{active?"Original (dying)":"You"}</div>
+        </div>
+        {active&&<div style={{position:"absolute",right:"22%",top:10,animation:"fadeUp 1s ease both"}}><div style={{width:80,height:80,borderRadius:"50%",background:"var(--accent)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,margin:"0 auto"}}>🧍</div><div style={{fontSize:"0.7rem",color:"var(--dim)",marginTop:6,letterSpacing:"0.1em",textTransform:"uppercase"}}>Replica (healthy)</div></div>}
+        {active&&<div style={{position:"absolute",top:100,left:"50%",transform:"translateX(-50%)",width:140,borderTop:"2px dashed var(--dim)",opacity:0.5}}/>}
+        {active&&<div style={{position:"absolute",top:120,left:"50%",transform:"translateX(-50%)",fontSize:"0.75rem",color:"var(--dim)",fontStyle:"italic",animation:"fadeUp 1.5s ease both"}}>📞 You can talk to each other</div>}
+        {active&&<div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",width:"80%",maxWidth:400,padding:"0.8rem 1.2rem",background:"var(--ghost)",borderRadius:8,fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.95rem",lineHeight:1.5,color:"var(--fg)",animation:"fadeUp 2s ease both"}}>Both share your past. Both feel like "you" from the inside. <br/><strong style={{fontStyle:"normal"}}>Which one is the real you?</strong><br/><span style={{fontSize:"0.85rem"}}>Parfit: That's the wrong question entirely.</span></div>}
+      </div>
+      <button onClick={()=>setActive(!active)} style={{marginTop:"1rem",padding:"0.6rem 1.8rem",background:"none",border:"2px solid var(--accent)",color:"var(--fg)",cursor:"pointer",borderRadius:4,fontFamily:"var(--serif)",fontSize:"0.9rem"}}>{active?"Reset":"Malfunction!"}</button>
+    </div>
+  );
+}
+
+function SpectrumViz() {
+  const [val, setVal] = useState(0);
+  const pct = val/100;
+  const texts = [
+    [0,10,"Fully you. Unambiguous."],
+    [10,30,"A few cells replaced, a faint memory altered. Still you... right?"],
+    [30,50,"Your childhood memories are fading. New ones taking shape. Whose hands are these?"],
+    [50,70,'Half you, half Napoleon. The question "am I still me?" has no clear answer.'],
+    [70,90,"You remember Austerlitz. Your native language is shifting to French."],
+    [90,101,"Fully Napoleon. But where, exactly, did you stop being you?"]
+  ];
+  const txt = texts.find(t=>val>=t[0]&&val<t[1])?.[2]||"";
+  return (
+    <div style={{textAlign:"center",padding:"2rem 0"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",maxWidth:400,margin:"0 auto",gap:"1rem"}}>
+        <div style={{textAlign:"center",opacity:1-pct*0.7}}><div style={{fontSize:40,marginBottom:4}}>🧍</div><div style={{fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--dim)"}}>You</div></div>
+        <div style={{flex:1,height:8,borderRadius:4,position:"relative",background:"linear-gradient(to right, var(--accent) 0%, var(--warm) 50%, #8B4513 100%)",margin:"20px 0"}}>
+          <div style={{position:"absolute",top:-6,left:val+"%",transform:"translateX(-50%)",width:20,height:20,borderRadius:"50%",background:"var(--fg)",border:"3px solid var(--bg)",transition:"left 0.1s"}}/>
+        </div>
+        <div style={{textAlign:"center",opacity:0.3+pct*0.7}}><div style={{fontSize:40,marginBottom:4}}>👤</div><div style={{fontSize:"0.7rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"var(--dim)"}}>Napoleon</div></div>
+      </div>
+      <input type="range" min={0} max={100} value={val} onChange={e=>setVal(Number(e.target.value))} style={{width:"60%",maxWidth:400,marginTop:"1rem",accentColor:"var(--warm)"}}/>
+      <div style={{marginTop:"1rem",fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.95rem",color:"var(--fg)",lineHeight:1.5,minHeight:50}}>{txt}</div>
+      <div style={{marginTop:"0.8rem",fontSize:"0.8rem",color:"var(--dim)",fontFamily:"var(--serif)"}}>Parfit's point: there is no sharp boundary. Identity is not all-or-nothing.</div>
+    </div>
+  );
+}
+
+function RepugnantViz() {
+  const [scenario, setScenario] = useState("A");
+  const isA = scenario==="A";
+  const totalA=800, totalZ=20000;
+  return (
+    <div style={{textAlign:"center",padding:"2rem 0"}}>
+      <div style={{display:"flex",justifyContent:"center",gap:"2rem",flexWrap:"wrap",marginBottom:"1.5rem"}}>
+        <div style={{padding:"1.5rem",borderRadius:8,cursor:"pointer",minWidth:180,maxWidth:220,border:isA?"2px solid var(--accent)":"2px solid var(--ghost)",background:isA?"var(--ghost)":"transparent",transition:"all 0.4s"}} onClick={()=>setScenario("A")}>
+          <div style={{fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--dim)",marginBottom:8}}>Population A</div>
+          <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:3,marginBottom:10,maxWidth:160,margin:"0 auto 10px"}}>{Array.from({length:10}).map((_,i)=><div key={i} style={{fontSize:20}}>😊</div>)}</div>
+          <div style={{fontSize:"0.8rem",color:"var(--fg)"}}><strong>10</strong> people</div>
+          <div style={{fontSize:"0.8rem",color:"var(--fg)"}}>Each at <strong>80%</strong> wellbeing</div>
+          <div style={{fontSize:"0.85rem",color:"var(--accent)",marginTop:8,fontWeight:700,fontFamily:"var(--serif)"}}>Total: 800</div>
+        </div>
+        <div style={{padding:"1.5rem",borderRadius:8,cursor:"pointer",minWidth:180,maxWidth:220,border:!isA?"2px solid var(--warm)":"2px solid var(--ghost)",background:!isA?"var(--ghost)":"transparent",transition:"all 0.4s"}} onClick={()=>setScenario("Z")}>
+          <div style={{fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--dim)",marginBottom:8}}>Population Z</div>
+          <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:1,marginBottom:10,maxWidth:190,margin:"0 auto 10px"}}>{Array.from({length:70}).map((_,i)=><div key={i} style={{fontSize:9,opacity:0.45}}>😐</div>)}</div>
+          <div style={{fontSize:"0.75rem",color:"var(--dim)",fontStyle:"italic",marginBottom:4}}>(representing thousands more)</div>
+          <div style={{fontSize:"0.8rem",color:"var(--fg)"}}><strong>10,000</strong> people</div>
+          <div style={{fontSize:"0.8rem",color:"var(--fg)"}}>Each at <strong>2%</strong> wellbeing</div>
+          <div style={{fontSize:"0.85rem",color:"var(--warm)",marginTop:8,fontWeight:700,fontFamily:"var(--serif)"}}>Total: 20,000</div>
+        </div>
+      </div>
+      <div style={{maxWidth:360,margin:"0 auto 1.5rem"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          <div style={{fontSize:"0.7rem",color:"var(--dim)",width:20,textAlign:"right"}}>A</div>
+          <div style={{flex:1,background:"var(--ghost)",borderRadius:3,height:14,overflow:"hidden"}}><div style={{width:"4%",height:"100%",background:"var(--accent)",borderRadius:3,transition:"width 0.6s"}}/></div>
+          <div style={{fontSize:"0.7rem",color:"var(--dim)",width:50,textAlign:"left"}}>800</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:"0.7rem",color:"var(--dim)",width:20,textAlign:"right"}}>Z</div>
+          <div style={{flex:1,background:"var(--ghost)",borderRadius:3,height:14,overflow:"hidden"}}><div style={{width:"100%",height:"100%",background:"var(--warm)",borderRadius:3,transition:"width 0.6s"}}/></div>
+          <div style={{fontSize:"0.7rem",color:"var(--dim)",width:50,textAlign:"left"}}>20,000</div>
+        </div>
+        <div style={{fontSize:"0.7rem",color:"var(--dim)",textAlign:"center",marginTop:8,letterSpacing:"0.1em",textTransform:"uppercase"}}>Total wellbeing comparison</div>
+      </div>
+      <div style={{padding:"1rem 1.5rem",background:"var(--ghost)",borderRadius:8,fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.95rem",lineHeight:1.6,maxWidth:460,margin:"0 auto"}}>
+        {isA
+          ? <>Population A: ten people, each living a rich, flourishing life at 80% wellbeing. Feels obviously better — but the math only adds up to <strong style={{fontStyle:"normal"}}>800</strong>.</>
+          : <>Population Z: ten thousand people, each life just barely worth living at 2% wellbeing. Feels deeply wrong — but the sheer number of lives pushes total wellbeing to <strong style={{fontStyle:"normal"}}>20,000</strong>. That's 25x more than A. <br/><br/><span style={{fontSize:"0.85rem"}}>Any theory that sums up wellbeing must prefer Z. Parfit called this <em>repugnant</em>.</span></>}
+      </div>
+    </div>
+  );
+}
+
+function NonIdentityViz() {
+  const [choice, setChoice] = useState(null);
+  return (
+    <div style={{textAlign:"center",padding:"2rem 0"}}>
+      <div style={{fontFamily:"var(--serif)",fontSize:"0.95rem",marginBottom:"1.5rem",color:"var(--dim)"}}>A government must choose between two energy policies:</div>
+      <div style={{display:"flex",justifyContent:"center",gap:"2rem",flexWrap:"wrap",marginBottom:"1.5rem"}}>
+        <div style={{padding:"1.2rem 1.5rem",borderRadius:8,cursor:"pointer",maxWidth:200,textAlign:"left",border:choice==="safe"?"2px solid var(--accent)":"2px solid var(--ghost)",background:choice==="safe"?"var(--ghost)":"transparent",transition:"all 0.3s"}} onClick={()=>setChoice("safe")}>
+          <div style={{fontWeight:700,marginBottom:6,fontSize:"0.9rem"}}>🌱 Safe Policy</div>
+          <div style={{fontSize:"0.8rem",color:"var(--dim)",lineHeight:1.5}}>Slightly lower growth now. Future generations inherit a clean world.</div>
+        </div>
+        <div style={{padding:"1.2rem 1.5rem",borderRadius:8,cursor:"pointer",maxWidth:200,textAlign:"left",border:choice==="risky"?"2px solid var(--warm)":"2px solid var(--ghost)",background:choice==="risky"?"var(--ghost)":"transparent",transition:"all 0.3s"}} onClick={()=>setChoice("risky")}>
+          <div style={{fontWeight:700,marginBottom:6,fontSize:"0.9rem"}}>🏭 Risky Policy</div>
+          <div style={{fontSize:"0.8rem",color:"var(--dim)",lineHeight:1.5}}>Higher growth now. Future generations face environmental damage.</div>
+        </div>
+      </div>
+      {choice&&<div style={{padding:"1rem 1.5rem",background:"var(--ghost)",borderRadius:8,fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.95rem",lineHeight:1.6,maxWidth:480,margin:"0 auto",animation:"fadeUp 0.6s ease both"}}>
+        {choice==="safe"
+          ? <>The safe policy creates a different chain of events — different people meet, different children are born. The future population is entirely different individuals from those who'd exist under the risky policy.</>
+          : <>The risky policy causes environmental damage. But here's the twist: the people who suffer <em>would not exist</em> under the safe policy. Different choices lead to different people being born. <br/><br/><strong style={{fontStyle:"normal"}}>Can we say we "harmed" people who would never have existed otherwise?</strong><br/><span style={{fontSize:"0.85rem"}}>Their lives are still worth living. They can't wish you'd chosen differently — because then <em>they</em> wouldn't be here.</span></>}
+      </div>}
+    </div>
+  );
+}
+
+function MountainViz() {
+  const [activeCase, setActiveCase] = useState(null);
+  const traditions = [
+    {id:"con",label:"Consequentialism",color:"#c0785a",short:"Maximize good outcomes"},
+    {id:"kan",label:"Kantianism",color:"#7a9a8a",short:"Act on universalizable principles"},
+    {id:"sca",label:"Contractualism",color:"#8a7a9a",short:"Follow rules no one could reasonably reject"},
+  ];
+  const cases = [
+    {id:"lying",label:"Is it wrong to lie to spare someone's feelings?",
+      answers:{con:"Typically wrong — lying erodes trust, which produces worse outcomes for everyone over time. The short-term comfort doesn't outweigh the long-term damage to social cooperation.",kan:'Wrong — you cannot universalize a maxim that says "lie whenever it\'s convenient." If everyone did this, the very institution of truth-telling collapses, making lying itself impossible.',sca:"Wrong — the person being lied to could reasonably reject a principle that permits deception, even well-intentioned deception. It disrespects their capacity to handle the truth."},
+      convergence:"All three arrive at the same answer — lying is wrong — but each gets there by a completely different route. One counts consequences, one tests universalizability, one asks about reasonable rejection. Same summit, different paths."},
+    {id:"promise",label:"Must you keep a promise when breaking it would help more people?",
+      answers:{con:"A sophisticated consequentialist says yes — because a world where promises are unreliable produces far worse outcomes than the occasional missed opportunity to help. Rule-following has better consequences than case-by-case calculation.",kan:"Absolutely — a promise is a commitment you cannot will as a universal exception. If everyone broke promises when convenient, the concept of promising would be meaningless.",sca:"Yes — the person you promised could reasonably reject any principle that lets you override their legitimate expectation. They consented to a deal; breaking it treats them as a mere means."},
+      convergence:'This is Parfit\'s key move: when consequentialism grows sophisticated enough to value rules and institutions (not just individual acts), it starts sounding remarkably like Kant. And Kant\'s test of universalizability — "what if everyone did this?" — starts sounding like Scanlon\'s "could anyone reasonably reject this?"'},
+    {id:"sacrifice",label:"Is it wrong to sacrifice one person to save five?",
+      answers:{con:"Seems straightforward — five lives outweigh one. But sophisticated consequentialism recognizes that a society that permits killing innocents produces catastrophically bad long-term consequences. The rule against killing matters more than the arithmetic.",kan:"Wrong — you are using the one person merely as a means to an end. Their dignity and autonomy cannot be overridden by a headcount.",sca:"Wrong — the person being sacrificed could reasonably reject any principle that permits using them as a tool, even for a greater number. Each person's standpoint must be considered individually, not aggregated."},
+      convergence:"Here's the convergence at its sharpest: the consequentialist, the Kantian, and the contractualist all reject the sacrifice — but a naive version of consequentialism wouldn't. Parfit argues that the correct consequentialism is the rule-following version, and that version agrees with the other two. The disagreements that have defined moral philosophy for centuries were between crude versions of each theory."},
+  ];
+  const activeData = cases.find(c=>c.id===activeCase);
+  return (
+    <div style={{padding:"1rem 0"}}>
+      <div style={{textAlign:"center"}}>
+        <svg viewBox="0 0 400 240" style={{width:"100%",maxWidth:380}}>
+          <polygon points="200,25 40,220 360,220" fill="var(--ghost)" stroke="var(--dim)" strokeWidth="0.8"/>
+          <circle cx="200" cy="30" r="14" fill="var(--warm)" opacity="0.85"/>
+          <text x="200" y="14" textAnchor="middle" fontSize="8" fill="var(--warm)" fontWeight="700" fontFamily="var(--sans)" letterSpacing="1.5">CONVERGENCE</text>
+          <text x="200" y="35" textAnchor="middle" fontSize="10" fill="var(--bg)" fontWeight="700">☀</text>
+          <path d="M75,210 Q115,140 200,30" stroke={traditions[0].color} strokeWidth="2.5" fill="none" strokeDasharray="6,4"/>
+          <text x="40" y="232" fontSize="7.5" fill={traditions[0].color} fontFamily="var(--sans)" fontWeight="600">Consequentialism</text>
+          <path d="M200,218 Q200,130 200,30" stroke={traditions[1].color} strokeWidth="2.5" fill="none" strokeDasharray="6,4"/>
+          <text x="168" y="237" fontSize="7.5" fill={traditions[1].color} fontFamily="var(--sans)" fontWeight="600">Kantianism</text>
+          <path d="M325,210 Q285,140 200,30" stroke={traditions[2].color} strokeWidth="2.5" fill="none" strokeDasharray="6,4"/>
+          <text x="285" y="232" fontSize="7.5" fill={traditions[2].color} fontFamily="var(--sans)" fontWeight="600">Contractualism</text>
+          <text x="88" y="180" fontSize="13">🧗</text><text x="193" y="155" fontSize="13">🧗</text><text x="290" y="180" fontSize="13">🧗</text>
+        </svg>
+      </div>
+      <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap",justifyContent:"center",margin:"1rem 0"}}>
+        {traditions.map(t=><div key={t.id} style={{padding:"0.5rem 0.8rem",borderRadius:6,fontSize:"0.75rem",border:"1.5px solid "+t.color+"30",background:t.color+"10",color:t.color,fontWeight:500,textAlign:"center",maxWidth:170}}><strong>{t.label}</strong><div style={{fontSize:"0.7rem",opacity:0.8,marginTop:2}}>{t.short}</div></div>)}
+      </div>
+      <div style={{fontSize:"0.7rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"var(--dim)",textAlign:"center",margin:"1.5rem 0 0.8rem"}}>Test the convergence — pick a moral dilemma:</div>
+      <div style={{display:"flex",flexDirection:"column",gap:"0.5rem",maxWidth:480,margin:"0 auto"}}>
+        {cases.map(c=><button key={c.id} onClick={()=>setActiveCase(activeCase===c.id?null:c.id)} style={{padding:"0.7rem 1rem",background:activeCase===c.id?"var(--ghost)":"transparent",border:activeCase===c.id?"1.5px solid var(--accent)":"1.5px solid var(--ghost)",borderRadius:6,cursor:"pointer",textAlign:"left",fontFamily:"var(--serif)",fontSize:"0.9rem",color:"var(--fg)",transition:"all 0.3s"}}>{c.label}</button>)}
+      </div>
+      {activeData&&<div style={{maxWidth:480,margin:"1.5rem auto 0",animation:"fadeUp 0.5s ease both"}}>
+        {traditions.map(t=><div key={t.id} style={{padding:"0.8rem 1rem",marginBottom:"0.5rem",borderLeft:"3px solid "+t.color,background:t.color+"08",borderRadius:"0 6px 6px 0"}}><div style={{fontSize:"0.7rem",fontWeight:700,color:t.color,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.1em"}}>{t.label}</div><div style={{fontFamily:"var(--serif)",fontSize:"0.85rem",lineHeight:1.6,color:"var(--fg)"}}>{activeData.answers[t.id]}</div></div>)}
+        <div style={{padding:"1rem 1.2rem",background:"rgba(192,120,90,0.1)",borderRadius:8,marginTop:"1rem",border:"1px solid rgba(192,120,90,0.2)"}}><div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--warm)",marginBottom:6,fontWeight:700}}>The Convergence</div><div style={{fontFamily:"var(--serif)",fontSize:"0.9rem",lineHeight:1.65,color:"var(--fg)"}}>{activeData.convergence}</div></div>
+      </div>}
+    </div>
+  );
+}
+
+const INTERACTIVE_MAP = {teleporter:TeleporterViz,branch:BranchViz,spectrum:SpectrumViz,repugnant:RepugnantViz,nonidentity:NonIdentityViz,mountain:MountainViz};
+
+function IntroPage({onBegin}) {
+  return (
+    <div style={{textAlign:"center",paddingTop:"10vh"}}>
+      <div style={{fontSize:"0.7rem",letterSpacing:"0.25em",textTransform:"uppercase",color:"var(--warm)",marginBottom:"1.5rem"}}>Reasons and Persons · On What Matters</div>
+      <h1 style={{fontFamily:"var(--serif)",fontWeight:700,fontSize:"clamp(2rem, 5vw, 3rem)",lineHeight:1.15,margin:"0 0 1rem",color:"var(--fg)"}}>Derek Parfit</h1>
+      <p style={{fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"1.1rem",color:"var(--dim)",lineHeight:1.6,maxWidth:420,margin:"0 auto 2rem"}}>Six thought experiments that unravel<br/>who you are, what matters, and why.</p>
+      <p style={{fontSize:"0.85rem",color:"var(--dim)",lineHeight:1.7,maxWidth:420,margin:"0 auto 2.5rem"}}>Derek Parfit (1942–2017) was a British philosopher widely regarded as one of the most important moral thinkers of the 20th century. His two major works — <em>Reasons and Persons</em> (1984) and <em>On What Matters</em> (2011) — reshape how we think about identity, ethics, and what makes a life go well.</p>
+      <button onClick={onBegin} style={{padding:"0.7rem 2rem",background:"none",border:"2px solid var(--accent)",color:"var(--fg)",cursor:"pointer",borderRadius:4,fontFamily:"var(--serif)",fontSize:"0.95rem",letterSpacing:"0.05em"}}>Begin →</button>
+    </div>
+  );
+}
+
+function MountainPage() {
+  return (
+    <div>
+      <div className="section-label">Moral Convergence</div>
+      <h2 style={{fontFamily:"var(--serif)",fontWeight:700,fontSize:"clamp(1.5rem, 4vw, 2rem)",lineHeight:1.2,margin:"0 0 0.3rem"}}>Climbing the Mountain</h2>
+      <div style={{fontSize:"0.75rem",color:"var(--dim)",fontStyle:"italic",marginBottom:"1.5rem"}}>On What Matters, Vol. I–III</div>
+      <div style={{padding:"1.2rem 1.5rem",background:"var(--ghost)",borderLeft:"3px solid var(--warm)",borderRadius:"0 6px 6px 0",fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"1.05rem",lineHeight:1.6,marginBottom:"1.5rem"}}>What if the three great moral traditions — which have been at war for over two centuries — were actually different ways of saying the same thing?</div>
+      <div style={{marginBottom:"1.5rem"}}>
+        <div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--dim)",marginBottom:"0.5rem"}}>The Context</div>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:"0 0 1rem"}}>For over two centuries, three great moral traditions have been at war. Consequentialists say the right act is whatever produces the best outcome. Kantians say the right act follows a principle you could rationally will everyone to follow. Contractualists say the right act follows rules no one could reasonably reject.</p>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:0}}>These traditions have defined opposing camps in philosophy departments worldwide. Entire careers have been spent attacking one to defend another. Parfit thought this was a catastrophic waste — and <em>On What Matters</em>, his 1,400-page magnum opus, is his attempt to prove it. His claim is arguably the most ambitious in modern moral philosophy: that when each tradition is stated in its most sophisticated form, <em>they converge on the same answers</em>.</p>
+      </div>
+      <MountainViz/>
+      <div style={{marginTop:"1.5rem",marginBottom:"1.5rem"}}>
+        <div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--accent)",marginBottom:"0.5rem"}}>Parfit's Insight — The Triple Theory</div>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:"0 0 1rem"}}>Parfit formulates what he calls the <strong>Triple Theory</strong>: <em>an act is wrong if and only if it is forbidden by the principles that are optimific, universally willable, and not reasonably rejectable.</em> That single sentence is simultaneously consequentialist (optimific = produces the best outcomes), Kantian (universally willable), and contractualist (not reasonably rejectable).</p>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:"0 0 1rem"}}>The key move is that crude consequentialism — "just maximize happiness in each individual case" — leads to monstrous conclusions (like the sacrifice problem above). But <em>rule</em> consequentialism — "follow the set of rules whose general adoption would maximize happiness" — gives much more humane answers. And those answers, Parfit argues, are the same answers Kant and Scanlon arrive at.</p>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:"0 0 1rem"}}>The three traditions weren't wrong. They were <em>incomplete</em>. Each had grasped part of the moral truth from a different vantage point. When you take the best version of each — consequentialism about rules, Kantianism about what everyone could rationally agree to, contractualism about what no one could reasonably reject — you end up at the same summit.</p>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:0}}>This matters far beyond philosophy departments. If the three traditions really do converge, then moral reasoning isn't the hopeless tangle it often seems. There are right answers. We can find them. And the path forward isn't to pick a team — it's to realize the teams were always heading to the same place.</p>
+      </div>
+      <div style={{padding:"1rem 1.5rem",background:"rgba(192,120,90,0.08)",borderRadius:6,marginBottom:"2rem"}}>
+        <div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--warm)",marginBottom:"0.4rem"}}>Something to Sit With</div>
+        <p style={{fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.9rem",lineHeight:1.6,margin:0}}>If Parfit is right, two and a half millennia of ethical debate has been an argument about the route while agreeing on the destination. The deepest moral disagreements in philosophy aren't really disagreements at all — just different vocabularies for the same truths. That's either the most hopeful or the most audacious claim in modern philosophy. Probably both.</p>
+      </div>
+    </div>
+  );
+}
+
+function ConclusionPage() {
+  const threads = [
+    {icon:"🪞",title:"Identity Is Not What Matters",body:'The Teleporter, the Branch Line Case, and the Combined Spectrum all build toward the same conclusion: personal identity — the question "am I the same person?" — is the wrong thing to fixate on. What matters is psychological continuity: the flow of memories, intentions, personality, and relationships. That flow can branch, fade, or transform without there ever being a clean yes/no answer to "is it still me?" Once you accept this, a lot of existential anxiety dissolves. You don\'t need to be the "same person" you were at 20. You just need to be connected to them in the ways that matter.'},
+    {icon:"⚖️",title:"Ethics Needs to Grow Up",body:'The Repugnant Conclusion and the Non-Identity Problem reveal that our intuitive moral reasoning breaks down under pressure. Simple rules like "maximize total happiness" or "don\'t harm anyone" produce absurd or monstrous conclusions when applied to populations, future generations, or large-scale policy. Parfit doesn\'t offer easy answers — he thought no one had them yet. But he shows that we need more sophisticated ethical tools than common sense provides. The stakes are real: climate policy, AI development, global health — these are all Non-Identity problems and Repugnant Conclusion puzzles in disguise.'},
+    {icon:"⛰️",title:"We Agree More Than We Think",body:"The grand argument of On What Matters is that moral philosophy's warring factions — the consequentialists, the Kantians, the contractualists — have been talking past each other. When each theory is refined to its most defensible form, they converge. This isn't a vague hope. It's a rigorous, 1,400-page proof that the best versions of these theories yield the same moral verdicts. If Parfit is right, we are not in an age of irreconcilable moral disagreement. We're in an age where the disagreement is mostly about language."},
+    {icon:"🔭",title:"The Bigger Picture",body:"Parfit believed we are living in the most important and most dangerous period in human history — a brief window where we have the power to destroy ourselves but haven't yet developed the wisdom to reliably avoid it. His work on population ethics, future generations, and moral convergence was not an academic exercise. He was trying to lay the philosophical groundwork for a species that needs to make very large, very consequential decisions very soon — about AI, about climate, about who counts and what matters. He thought getting the ethics right was the most urgent task in the world."},
+  ];
+  return (
+    <div>
+      <div className="section-label">Conclusion</div>
+      <h2 style={{fontFamily:"var(--serif)",fontWeight:700,fontSize:"clamp(1.5rem, 4vw, 2rem)",lineHeight:1.2,margin:"0 0 0.3rem"}}>What It All Means</h2>
+      <div style={{fontSize:"0.75rem",color:"var(--dim)",fontStyle:"italic",marginBottom:"1.5rem"}}>Four threads from two lifeworks</div>
+      <p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:"0 0 1.5rem",color:"var(--fg)"}}>Parfit's two books span 30 years and thousands of pages, but they orbit a single, driving question: <em>what do we have reason to do, and why?</em> Here is what the thought experiments, taken together, are trying to tell us.</p>
+      {threads.map((t,i)=><div key={i} style={{marginBottom:"1.5rem",padding:"1.2rem 1.5rem",background:"var(--ghost)",borderRadius:8,borderLeft:"3px solid var(--accent)"}}>
+        <div style={{fontSize:"1.4rem",marginBottom:"0.3rem"}}>{t.icon}</div>
+        <h3 style={{fontFamily:"var(--serif)",fontWeight:700,fontSize:"1.05rem",margin:"0 0 0.6rem",color:"var(--fg)"}}>{t.title}</h3>
+        <p style={{fontFamily:"var(--serif)",fontSize:"0.9rem",lineHeight:1.7,margin:0,color:"var(--fg)"}}>{t.body}</p>
+      </div>)}
+      <div style={{margin:"2rem 0",padding:"1.5rem",textAlign:"center",borderTop:"1px solid var(--ghost)",borderBottom:"1px solid var(--ghost)"}}>
+        <p style={{fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"1.1rem",lineHeight:1.7,color:"var(--fg)",maxWidth:420,margin:"0 auto 0.8rem"}}>"What matters most is not whether we survive, but whether we have reasons to act well — and whether, together, we can agree on what that means."</p>
+        <div style={{fontSize:"0.8rem",color:"var(--dim)"}}>— The spirit of Parfit's project</div>
+      </div>
+      <div style={{textAlign:"center",padding:"1.5rem 0",fontSize:"0.85rem",color:"var(--dim)",fontFamily:"var(--serif)",lineHeight:1.7}}>If any of this sparked something, the books themselves are worth the climb. <em>Reasons and Persons</em> is the shorter, wilder ride. <em>On What Matters</em> is the cathedral.</div>
+    </div>
+  );
+}
+
+function ParfitExplorer() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [fadeState, setFadeState] = useState("in");
+  const contentRef = useRef(null);
+  const current = EXPERIMENTS[currentIndex];
+  const navigateTo = (idx) => {
+    if(idx===currentIndex||idx<0||idx>=EXPERIMENTS.length) return;
+    setFadeState("out");
+    setTimeout(()=>{setCurrentIndex(idx);setFadeState("in");if(contentRef.current)contentRef.current.scrollTop=0;},300);
+  };
+  const InteractiveComponent = current.interactive ? INTERACTIVE_MAP[current.interactive] : null;
+  const isIntro=current.id==="intro", isMountain=current.id==="mountain", isConclusion=current.id==="conclusion";
+  const isStandard=!isIntro&&!isMountain&&!isConclusion;
+
+  return (
+    <div style={{fontFamily:"var(--sans)",background:"var(--bg)",color:"var(--fg)",minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+      <header style={{padding:"1rem 1.5rem",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid var(--ghost)",flexShrink:0}}>
+        <div style={{fontSize:"0.7rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--dim)"}}>Parfit · A Visual Guide</div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>{EXPERIMENTS.map((_,i)=><button key={i} className={"nav-dot"+(i===currentIndex?" active":"")} onClick={()=>navigateTo(i)} title={EXPERIMENTS[i].title}/>)}</div>
+      </header>
+      <main ref={contentRef} className={fadeState==="in"?"fade-in":"fade-out"} style={{flex:1,overflow:"auto",padding:"2rem 1.5rem",maxWidth:640,margin:"0 auto",width:"100%"}}>
+        {isIntro&&<IntroPage onBegin={()=>navigateTo(1)}/>}
+        {isMountain&&<MountainPage/>}
+        {isConclusion&&<ConclusionPage/>}
+        {isStandard&&<div>
+          {current.category&&<div className="section-label">{current.category}</div>}
+          <h2 style={{fontFamily:"var(--serif)",fontWeight:700,fontSize:"clamp(1.5rem, 4vw, 2rem)",lineHeight:1.2,margin:"0 0 0.3rem"}}>{current.title}</h2>
+          <div style={{fontSize:"0.75rem",color:"var(--dim)",fontStyle:"italic",marginBottom:"1.5rem"}}>{current.subtitle}</div>
+          <div style={{padding:"1.2rem 1.5rem",background:"var(--ghost)",borderLeft:"3px solid var(--warm)",borderRadius:"0 6px 6px 0",fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"1.05rem",lineHeight:1.6,marginBottom:"1.5rem"}}>{current.question}</div>
+          <div style={{marginBottom:"1.5rem"}}><div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--dim)",marginBottom:"0.5rem"}}>The Setup</div><p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:0,color:"var(--fg)"}}>{current.setup}</p></div>
+          {InteractiveComponent&&<div style={{margin:"2rem 0",padding:"1rem 0",borderTop:"1px solid var(--ghost)",borderBottom:"1px solid var(--ghost)"}}><InteractiveComponent/></div>}
+          <div style={{marginBottom:"1.5rem"}}><div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--accent)",marginBottom:"0.5rem"}}>Parfit's Insight</div><p style={{fontFamily:"var(--serif)",fontSize:"0.95rem",lineHeight:1.7,margin:0,color:"var(--fg)"}}>{current.insight}</p></div>
+          <div style={{padding:"1rem 1.5rem",background:"rgba(192,120,90,0.08)",borderRadius:6,marginBottom:"2rem"}}><div style={{fontSize:"0.65rem",letterSpacing:"0.2em",textTransform:"uppercase",color:"var(--warm)",marginBottom:"0.4rem"}}>Something to Sit With</div><p style={{fontFamily:"var(--serif)",fontStyle:"italic",fontSize:"0.9rem",lineHeight:1.6,margin:0,color:"var(--fg)"}}>{current.provocation}</p></div>
+        </div>}
+        {!isIntro&&<div style={{display:"flex",justifyContent:"space-between",paddingTop:"1rem",borderTop:"1px solid var(--ghost)"}}>
+          <button onClick={()=>navigateTo(currentIndex-1)} disabled={currentIndex===0} style={{padding:"0.5rem 1.2rem",background:"none",border:"1.5px solid var(--ghost)",borderRadius:4,color:currentIndex===0?"var(--ghost)":"var(--dim)",cursor:currentIndex===0?"default":"pointer",fontFamily:"var(--serif)",fontSize:"0.85rem"}}>← Previous</button>
+          <button onClick={()=>navigateTo(currentIndex+1)} disabled={currentIndex===EXPERIMENTS.length-1} style={{padding:"0.5rem 1.2rem",background:"none",border:"1.5px solid "+(currentIndex===EXPERIMENTS.length-1?"var(--ghost)":"var(--accent)"),borderRadius:4,color:currentIndex===EXPERIMENTS.length-1?"var(--ghost)":"var(--fg)",cursor:currentIndex===EXPERIMENTS.length-1?"default":"pointer",fontFamily:"var(--serif)",fontSize:"0.85rem"}}>Next →</button>
+        </div>}
+      </main>
+      <footer style={{padding:"0.8rem 1.5rem",borderTop:"1px solid var(--ghost)",fontSize:"0.7rem",color:"var(--dim)",textAlign:"center",flexShrink:0}}>Based on <em>Reasons and Persons</em> (1984) and <em>On What Matters</em> (2011) by Derek Parfit</footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ParfitExplorer/>);
+</script>
+</body>
+</html>
